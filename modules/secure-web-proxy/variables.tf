@@ -76,3 +76,15 @@ variable "global_address_prefix_length" {
   type        = number
   default     = 16
 }
+
+variable "vpc_flow_logs" {
+  description = "VPC flow logs configuration for the regional managed proxy subnetwork. See https://cloud.google.com/secure-web-proxy/docs/initial-setup-steps#create_a_proxy_subnet and https://cloud.google.com/vpc/docs/using-flow-logs"
+  type = object({
+    enable               = optional(bool, true)
+    aggregation_interval = optional(string, "INTERVAL_5_SEC")
+    flow_sampling        = optional(number, 0.5)
+    metadata             = optional(string, "INCLUDE_ALL_METADATA")
+    filter_expr          = optional(string, "true")
+  })
+  default = {}
+}

@@ -28,6 +28,21 @@ resource "google_compute_subnetwork" "swp_subnetwork_proxy" {
   network       = var.network_id
   purpose       = "REGIONAL_MANAGED_PROXY"
   role          = "ACTIVE"
+
+  dynamic "log_config" {
+    for_each = var.vpc_flow_logs.enable ? [{
+      aggregation_interval = var.vpc_flow_logs.aggregation_interval
+      flow_sampling        = var.vpc_flow_logs.flow_sampling
+      metadata             = var.vpc_flow_logs.metadata
+      filter_expr          = var.vpc_flow_logs.filter_expr
+    }] : []
+    content {
+      aggregation_interval = log_config.value.aggregation_interval
+      flow_sampling        = log_config.value.flow_sampling
+      metadata             = log_config.value.metadata
+      filter_expr          = log_config.value.filter_expr
+    }
+  }
 }
 
 module "swp_firewall_rule" {
