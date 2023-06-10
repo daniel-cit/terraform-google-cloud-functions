@@ -123,7 +123,7 @@ resource "google_network_security_gateway_security_policy_rule" "swp_security_po
 resource "null_resource" "swp_generate_gateway_config" {
   provisioner "local-exec" {
     command = <<EOF
-      cat << EOF > ${gateway_file}
+      cat << EOF > ${local.gateway_file}
       name: projects/${var.project_id}/locations/${var.region}/gateways/${var.proxy_name}
       type: SECURE_WEB_GATEWAY
       addresses: ${local.swp_addresses}
@@ -154,7 +154,7 @@ resource "null_resource" "swp_deploy" {
     when    = create
     command = <<EOF
       gcloud network-services gateways import ${var.proxy_name} \
-        --source=${gateway_file} \
+        --source=${local.gateway_file} \
         --location=${var.region} \
         --project=${var.project_id}
     EOF
