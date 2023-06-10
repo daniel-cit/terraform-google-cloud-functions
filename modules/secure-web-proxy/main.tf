@@ -18,6 +18,7 @@ locals {
   swp_addresses    = "[ ${join(",", [for s in var.addresses : format("%q", s)])} ]"
   swp_ports        = "[ ${join(",", [for s in var.ports : s])} ]"
   swp_certificates = "[ ${join(",", [for s in var.certificates : format("%q", s)])} ]"
+  gateway_file     = "${abspath(path.module)}/gateway.yaml"
 }
 
 resource "google_compute_subnetwork" "swp_subnetwork_proxy" {
@@ -28,21 +29,6 @@ resource "google_compute_subnetwork" "swp_subnetwork_proxy" {
   network       = var.network_id
   purpose       = "REGIONAL_MANAGED_PROXY"
   role          = "ACTIVE"
-
-  dynamic "log_config" {
-    for_each = var.vpc_flow_logs.enable ? [{
-      aggregation_interval = var.vpc_flow_logs.aggregation_interval
-      flow_sampling        = var.vpc_flow_logs.flow_sampling
-      metadata             = var.vpc_flow_logs.metadata
-      filter_expr          = var.vpc_flow_logs.filter_expr
-    }] : []
-    content {
-      aggregation_interval = log_config.value.aggregation_interval
-      flow_sampling        = log_config.value.flow_sampling
-      metadata             = log_config.value.metadata
-      filter_expr          = log_config.value.filter_expr
-    }
-  }
 }
 
 module "swp_firewall_rule" {
@@ -137,7 +123,7 @@ resource "google_network_security_gateway_security_policy_rule" "swp_security_po
 resource "null_resource" "swp_generate_gateway_config" {
   provisioner "local-exec" {
     command = <<EOF
-      cat << EOF > gateway.yaml
+      cat << EOF > ${gateway_file}
       name: projects/${var.project_id}/locations/${var.region}/gateways/${var.proxy_name}
       type: SECURE_WEB_GATEWAY
       addresses: ${local.swp_addresses}
@@ -168,7 +154,7 @@ resource "null_resource" "swp_deploy" {
     when    = create
     command = <<EOF
       gcloud network-services gateways import ${var.proxy_name} \
-        --source=gateway.yaml \
+        --source=${gateway_file} \
         --location=${var.region} \
         --project=${var.project_id}
     EOF
